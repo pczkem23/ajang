@@ -41,6 +41,7 @@ src/
   lib/age.ts         월령 계산·추천 로직
   components/        공용 UI
 supabase/schema.sql  DB 스키마 + RLS 보안 정책
+supabase/migrations/ 이후 변경분 (002: 우리 집 육아용품)
 ```
 
 ## 현재 상태 (v0.1 스캐폴드)
@@ -61,6 +62,8 @@ supabase/schema.sql  DB 스키마 + RLS 보안 정책
 - [x] 상품 등록·조회·검색·필터를 실제 DB로 교체, 사진 업로드(Storage)
 - [ ] 카카오·애플 로그인
 - [ ] 찜하기, 판매글 수정·상태 변경
+- [x] 우리 집 육아용품: 구매처·영수증 기록 → 버튼 하나로 판매글 자동 작성, 구매 영수증 확인 배지
+- [ ] 영수증 사진 AI 자동 인식(OCR), 월령별 졸업 알림
 
 **2단계 — 거래 기능**
 - [ ] 1:1 채팅 (Realtime) + 푸시 알림

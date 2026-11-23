@@ -73,6 +73,9 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        <Stack.Screen name="items/index" options={{ title: '우리 집 육아용품', headerBackTitle: '뒤로' }} />
+        <Stack.Screen name="items/new" options={{ title: '구매 기록하기', headerBackTitle: '뒤로' }} />
+        <Stack.Screen name="items/[id]" options={{ title: '', headerBackTitle: '뒤로' }} />
         <Stack.Screen name="listing/[id]" options={{ title: '', headerBackTitle: '뒤로' }} />
       </Stack>
     </ThemeProvider>

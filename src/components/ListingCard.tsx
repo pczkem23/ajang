@@ -29,6 +29,7 @@ export function ListingCard({ item }: { item: Listing }) {
               <Text style={styles.badgeText}>{item.condition}급</Text>
             </View>
             <Text style={styles.meta}>{item.usedMonths}개월 사용</Text>
+            {item.hasReceipt && <Text style={styles.receipt}>🧾 영수증 확인</Text>}
           </View>
           <View style={styles.row}>
             {status && (
@@ -54,6 +55,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   badgeText: { color: brand.white, fontSize: 11, fontWeight: '700' },
+  receipt: { fontSize: 11, color: '#2E9E6B', fontWeight: '600' },
   price: { fontSize: 16, fontWeight: '700', color: brand.ink },
   saving: { fontSize: 12, color: brand.primaryDark, fontWeight: '600' },
 });
