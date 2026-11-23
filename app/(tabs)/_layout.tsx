@@ -1,70 +1,26 @@
-import { SymbolView } from 'expo-symbols';
-import { Link, Tabs } from 'expo-router';
-import { Platform, Pressable } from 'react-native';
+import { Tabs } from 'expo-router';
+import { Text } from 'react-native';
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
+import { brand } from '@/constants/Colors';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+const icon = (emoji: string) => ({ focused }: { focused: boolean }) => (
+  <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.45 }}>{emoji}</Text>
+);
 
+export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
+        tabBarActiveTintColor: brand.primary,
         headerShown: useClientOnlyValue(false, true),
+        headerTitleStyle: { fontWeight: '700' },
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable style={{ marginRight: 15 }}>
-                {({ pressed }) => (
-                  <SymbolView
-                    name={{ ios: 'info.circle', android: 'info', web: 'info' }}
-                    size={25}
-                    tintColor={Colors[colorScheme].text}
-                    style={{ opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: '홈', headerTitle: '아장 · 아기장터', tabBarIcon: icon('🏠') }} />
+      <Tabs.Screen name="category" options={{ title: '카테고리', tabBarIcon: icon('🗂️') }} />
+      <Tabs.Screen name="sell" options={{ title: '판매하기', tabBarIcon: icon('➕') }} />
+      <Tabs.Screen name="chat" options={{ title: '채팅', tabBarIcon: icon('💬') }} />
+      <Tabs.Screen name="my" options={{ title: '마이', headerTitle: '마이페이지', tabBarIcon: icon('👤') }} />
     </Tabs>
   );
 }
