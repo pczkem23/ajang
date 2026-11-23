@@ -1,14 +1,19 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { brand } from '@/constants/Colors';
 import { ageBandLabel, categoryLabel, conditionOf } from '@/src/data/catalog';
-import { LISTINGS } from '@/src/data/mock';
+import { fetchListing } from '@/src/api/listings';
+import { ErrorView, Loading } from '@/src/components/ui';
+import { useAsync } from '@/src/lib/useAsync';
 import { savingRate, timeAgo, won } from '@/src/lib/format';
 
 export default function ListingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const item = LISTINGS.find((l) => l.id === id);
+  const { width } = useWindowDimensions();
+  const { data: item, error, loading, reload } = useAsync(() => fetchListing(id), [id]);
+  if (loading) return <Loading />;
+  if (error) return <ErrorView error={error} onRetry={reload} />;
   if (!item) return <Text style={{ padding: 20 }}>상품을 찾을 수 없어요</Text>;
 
   const cond = conditionOf(item.condition);
@@ -18,7 +23,11 @@ export default function ListingDetail() {
     <View style={{ flex: 1, backgroundColor: brand.white }}>
       <Stack.Screen options={{ title: '' }} />
       <ScrollView>
-        <Image source={{ uri: item.photos[0] }} style={styles.photo} />
+        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+          {(item.photos.length ? item.photos : [undefined]).map((uri, i) => (
+            <Image key={i} source={uri ? { uri } : undefined} style={[styles.photo, { width }]} />
+          ))}
+        </ScrollView>
         <View style={styles.body}>
           <Text style={styles.meta}>{categoryLabel(item.categoryId)} · {item.region} · {timeAgo(item.createdAt)}</Text>
           <Text style={styles.title}>{item.title}</Text>
@@ -69,7 +78,7 @@ function Spec({ k, v, color }: { k: string; v: string; color?: string }) {
 }
 
 const styles = StyleSheet.create({
-  photo: { width: '100%', aspectRatio: 1, backgroundColor: brand.line },
+  photo: { aspectRatio: 1, backgroundColor: brand.line },
   body: { padding: 16, gap: 12 },
   title: { fontSize: 20, fontWeight: '700', color: brand.ink },
   meta: { fontSize: 13, color: brand.sub },

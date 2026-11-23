@@ -21,6 +21,7 @@
 
 ```bash
 npm install
+cp .env.example .env   # Supabase 접속 정보 (공개 키)
 npm start        # Expo Go 앱으로 QR 스캔
 npm run web      # 브라우저에서 확인
 npx tsc --noEmit # 타입 체크
@@ -34,7 +35,9 @@ app/                 화면(라우트)
   listing/[id].tsx   상품 상세
 src/
   data/catalog.ts    카테고리 8종, 월령 8구간, 상태 등급 정의
-  data/mock.ts       백엔드 연동 전 샘플 데이터
+  api/               Supabase 조회·등록 (listings, profile)
+  lib/supabase.ts    Supabase 클라이언트
+  lib/auth.tsx       로그인 세션·내 프로필 상태
   lib/age.ts         월령 계산·추천 로직
   components/        공용 UI
 supabase/schema.sql  DB 스키마 + RLS 보안 정책
@@ -53,10 +56,11 @@ supabase/schema.sql  DB 스키마 + RLS 보안 정책
 ## MVP 로드맵 (출시까지 약 3개월)
 
 **1단계 — 백엔드 연결**
-- [ ] Supabase 프로젝트 생성, `schema.sql` 적용
-- [ ] 회원가입/로그인 (카카오·애플 로그인) + 아이 정보 등록 온보딩
-- [ ] 상품 등록·조회·수정을 실제 DB로 교체, 사진 업로드(Storage)
-- [ ] 찜하기
+- [x] Supabase 프로젝트 생성(ajang, 도쿄 리전), `schema.sql` 적용
+- [x] 이메일 로그인(메일 링크) + 닉네임·동네·아이 정보 온보딩
+- [x] 상품 등록·조회·검색·필터를 실제 DB로 교체, 사진 업로드(Storage)
+- [ ] 카카오·애플 로그인
+- [ ] 찜하기, 판매글 수정·상태 변경
 
 **2단계 — 거래 기능**
 - [ ] 1:1 채팅 (Realtime) + 푸시 알림

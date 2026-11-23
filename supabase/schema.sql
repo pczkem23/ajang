@@ -147,3 +147,40 @@ create policy "본인이 후기 작성" on reviews for insert with check (auth.u
 
 create policy "본인 신고" on reports for insert with check (auth.uid() = reporter_id);
 create policy "본인 차단" on blocks for all using (auth.uid() = blocker_id) with check (auth.uid() = blocker_id);
+
+-- ===== 가입 시 프로필 자동 생성 =====
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, nickname)
+  values (new.id, coalesce(new.raw_user_meta_data->>'nickname', '아장맘' || substr(new.id::text, 1, 6)));
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- updated_at 자동 갱신
+create or replace function public.touch_updated_at()
+returns trigger language plpgsql as $$
+begin new.updated_at = now(); return new; end;
+$$;
+create trigger listings_touch before update on listings
+  for each row execute function public.touch_updated_at();
+
+-- ===== 실시간 채팅 =====
+alter publication supabase_realtime add table messages;
+
+-- ===== 상품 사진 저장소 =====
+insert into storage.buckets (id, name, public) values ('listing-photos', 'listing-photos', true)
+  on conflict (id) do nothing;
+
+-- 경로 규칙: {user_id}/{파일명}
+create policy "상품 사진 공개 조회" on storage.objects for select
+  using (bucket_id = 'listing-photos');
+create policy "본인 폴더에 사진 업로드" on storage.objects for insert
+  with check (bucket_id = 'listing-photos' and auth.uid()::text = (storage.foldername(name))[1]);
+create policy "본인 사진 삭제" on storage.objects for delete
+  using (bucket_id = 'listing-photos' and auth.uid()::text = (storage.foldername(name))[1]);
