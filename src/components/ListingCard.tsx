@@ -16,7 +16,7 @@ export function ListingCard({ item }: { item: Listing }) {
   return (
     <Link href={{ pathname: '/listing/[id]', params: { id: item.id } }} asChild>
       <Pressable style={styles.card}>
-        <Image source={{ uri: item.photos[0] }} style={styles.photo} />
+        <Image source={item.photos[0] ? { uri: item.photos[0] } : undefined} style={styles.photo} />
         <View style={styles.body}>
           <Text style={styles.title} numberOfLines={2}>
             {item.title}

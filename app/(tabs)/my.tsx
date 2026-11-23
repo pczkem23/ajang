@@ -1,12 +1,15 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { brand } from '@/constants/Colors';
-import { ME } from '@/src/data/mock';
+import { Loading } from '@/src/components/ui';
 import { monthsLabel, monthsOld } from '@/src/lib/age';
+import { useAuth } from '@/src/lib/auth';
 
 const MENU = ['찜 목록', '판매 내역', '구매 내역', '받은 거래 후기', '우리 집 육아용품 (준비중)', '신고·차단 관리', '고객센터'];
 
 export default function MyScreen() {
+  const { profile: ME, signOut } = useAuth();
+  if (!ME) return <Loading />;
   return (
     <ScrollView style={{ backgroundColor: brand.white }} contentContainerStyle={{ padding: 16, gap: 16 }}>
       <View style={styles.profile}>
@@ -36,6 +39,9 @@ export default function MyScreen() {
         {MENU.map((m) => (
           <Text key={m} style={styles.menu}>{m}</Text>
         ))}
+        <Pressable onPress={signOut}>
+          <Text style={[styles.menu, { color: brand.sub }]}>로그아웃</Text>
+        </Pressable>
       </View>
     </ScrollView>
   );

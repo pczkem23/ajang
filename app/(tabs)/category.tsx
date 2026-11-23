@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { brand } from '@/constants/Colors';
 import { Chip } from '@/src/components/Chip';
 import { ListingCard } from '@/src/components/ListingCard';
 import { AGE_BANDS, CATEGORIES, CONDITIONS } from '@/src/data/catalog';
-import { LISTINGS } from '@/src/data/mock';
+import { fetchListings } from '@/src/api/listings';
+import { useAsync } from '@/src/lib/useAsync';
 import type { AgeBandId, CategoryId, ConditionGrade } from '@/src/types';
 
 export default function CategoryScreen() {
@@ -13,11 +14,8 @@ export default function CategoryScreen() {
   const [age, setAge] = useState<AgeBandId | null>(null);
   const [cond, setCond] = useState<ConditionGrade | null>(null);
 
-  const data = useMemo(
-    () =>
-      LISTINGS.filter(
-        (l) => (!cat || l.categoryId === cat) && (!age || l.ageBands.includes(age)) && (!cond || l.condition === cond),
-      ),
+  const { data, loading, reload } = useAsync(
+    () => fetchListings({ categoryId: cat, ageBand: age, condition: cond }),
     [cat, age, cond],
   );
 
@@ -46,10 +44,11 @@ export default function CategoryScreen() {
         </ScrollView>
       </View>
       <FlatList
-        data={data}
+        data={data ?? []}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}
         keyExtractor={(i) => i.id}
         renderItem={({ item }) => <ListingCard item={item} />}
-        ListEmptyComponent={<Text style={styles.empty}>조건에 맞는 상품이 없어요</Text>}
+        ListEmptyComponent={loading ? undefined : <Text style={styles.empty}>조건에 맞는 상품이 없어요</Text>}
       />
     </View>
   );

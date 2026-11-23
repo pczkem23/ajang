@@ -1,14 +1,25 @@
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { brand } from '@/constants/Colors';
+import { createListing } from '@/src/api/listings';
 import { Chip } from '@/src/components/Chip';
+import { useAuth } from '@/src/lib/auth';
 import { AGE_BANDS, CATEGORIES, CONDITIONS } from '@/src/data/catalog';
 import type { AgeBandId, CategoryId, ConditionGrade } from '@/src/types';
 
 const SAFETY_CATEGORIES: CategoryId[] = ['outing', 'newborn', 'furniture'];
 
+const MAX_PHOTOS = 10;
+
 export default function SellScreen() {
+  const { session, profile } = useAuth();
+  const router = useRouter();
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<CategoryId | null>(null);
   const [ages, setAges] = useState<AgeBandId[]>([]);
@@ -19,7 +30,22 @@ export default function SellScreen() {
   const [description, setDescription] = useState('');
 
   const toggleAge = (id: AgeBandId) => setAges((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-  const canSubmit = title && category && ages.length && condition && price;
+  const canSubmit = !!(title && category && ages.length && condition && price && photos.length);
+
+  const pickPhotos = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_PHOTOS - photos.length,
+      quality: 0.7,
+    });
+    if (!res.canceled) setPhotos((p) => [...p, ...res.assets.map((a) => a.uri)].slice(0, MAX_PHOTOS));
+  };
+
+  const reset = () => {
+    setPhotos([]); setTitle(''); setCategory(null); setAges([]); setCondition(null);
+    setUsedMonths(''); setPrice(''); setNewPrice(''); setDescription('');
+  };
 
   // AI 자동 작성 전 단계: 입력값 기반 설명 템플릿
   const fillTemplate = () => {
@@ -29,17 +55,49 @@ export default function SellScreen() {
     );
   };
 
-  const submit = () => {
-    // TODO: Supabase listings 테이블 insert + 사진 업로드
-    Alert.alert('등록 준비 완료', '백엔드 연동 후 실제로 등록돼요.');
+  const submit = async () => {
+    if (!session || !canSubmit) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const id = await createListing(session.user.id, {
+        title: title.trim(),
+        categoryId: category!,
+        ageBands: ages,
+        condition: condition!,
+        usedMonths: Number(usedMonths) || 0,
+        price: Number(price),
+        newPrice: newPrice ? Number(newPrice) : undefined,
+        description: description.trim(),
+        region: profile?.region ?? '',
+        safetySensitive: SAFETY_CATEGORIES.includes(category!),
+        photoUris: photos,
+      });
+      reset();
+      router.push({ pathname: '/listing/[id]', params: { id } });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, gap: 14 }}>
-      <Pressable style={styles.photoBox}>
-        <Text style={styles.photoText}>📷 사진 추가 (최대 10장)</Text>
+      <Pressable style={styles.photoBox} onPress={pickPhotos} disabled={photos.length >= MAX_PHOTOS}>
+        <Text style={styles.photoText}>📷 사진 추가 ({photos.length}/{MAX_PHOTOS})</Text>
         <Text style={styles.hint}>제품 라벨·사용감이 보이는 사진을 꼭 넣어주세요</Text>
       </Pressable>
+      {photos.length > 0 && (
+        <ScrollView horizontal contentContainerStyle={{ gap: 8 }}>
+          {photos.map((uri, i) => (
+            <Pressable key={uri + i} onPress={() => setPhotos((p) => p.filter((_, j) => j !== i))}>
+              <Image source={{ uri }} style={styles.thumb} />
+              <Text style={styles.remove}>✕</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
 
       <Field label="상품명">
         <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="예: 스토케 트립트랩" />
@@ -102,8 +160,9 @@ export default function SellScreen() {
         />
       </Field>
 
-      <Pressable disabled={!canSubmit} onPress={submit} style={[styles.button, !canSubmit && { opacity: 0.4 }]}>
-        <Text style={styles.buttonText}>등록하기</Text>
+      {error && <Text style={{ color: brand.primaryDark }}>{error}</Text>}
+      <Pressable disabled={!canSubmit || busy} onPress={submit} style={[styles.button, (!canSubmit || busy) && { opacity: 0.4 }]}>
+        <Text style={styles.buttonText}>{busy ? '등록 중…' : '등록하기'}</Text>
       </Pressable>
     </ScrollView>
   );
@@ -123,6 +182,8 @@ const styles = StyleSheet.create({
   photoBox: { borderWidth: 1, borderStyle: 'dashed', borderColor: brand.primary, borderRadius: 12, padding: 20, alignItems: 'center', gap: 4, backgroundColor: brand.cream },
   photoText: { fontSize: 15, fontWeight: '600', color: brand.primaryDark },
   hint: { fontSize: 12, color: brand.sub },
+  thumb: { width: 72, height: 72, borderRadius: 8, backgroundColor: brand.line },
+  remove: { position: 'absolute', top: 2, right: 6, color: brand.white, fontWeight: '700', textShadowColor: '#0008', textShadowRadius: 3 },
   label: { fontSize: 13, fontWeight: '600', color: brand.ink },
   input: { borderWidth: 1, borderColor: brand.line, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, color: brand.ink },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
