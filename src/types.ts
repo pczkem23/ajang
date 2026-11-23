@@ -40,6 +40,7 @@ export interface Listing {
   likes: number;
   createdAt: string; // ISO
   safetySensitive?: boolean; // 카시트·유아침대·유모차 등
+  hasReceipt?: boolean; // 구매 영수증 확인
 }
 
 export interface Child {
@@ -66,4 +67,20 @@ export interface ChatRoom {
   lastMessage: string;
   updatedAt: string;
   unread: number;
+}
+
+/** 우리 집 육아용품: 구매 기록 → 나중에 판매글로 전환 */
+export interface OwnedItem {
+  id: string;
+  title: string;
+  brand?: string;
+  categoryId: CategoryId;
+  store?: string; // 구매처
+  purchasedOn?: string; // YYYY-MM-DD
+  purchasePrice?: number;
+  receiptPath?: string; // 비공개 버킷 경로
+  photoUrl?: string; // 제품 사진 공개 URL
+  memo?: string;
+  listingId?: string; // 판매글로 전환됐으면 연결
+  createdAt: string;
 }

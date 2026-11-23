@@ -1,3 +1,4 @@
+import { Link } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { brand } from '@/constants/Colors';
@@ -5,7 +6,7 @@ import { Loading } from '@/src/components/ui';
 import { monthsLabel, monthsOld } from '@/src/lib/age';
 import { useAuth } from '@/src/lib/auth';
 
-const MENU = ['찜 목록', '판매 내역', '구매 내역', '받은 거래 후기', '우리 집 육아용품 (준비중)', '신고·차단 관리', '고객센터'];
+const MENU = ['찜 목록', '판매 내역', '구매 내역', '받은 거래 후기', '신고·차단 관리', '고객센터'];
 
 export default function MyScreen() {
   const { profile: ME, signOut } = useAuth();
@@ -35,6 +36,13 @@ export default function MyScreen() {
         <Text style={styles.link}>+ 아이 추가 (출산 예정일도 등록 가능)</Text>
       </View>
 
+      <Link href="/items" asChild>
+        <Pressable style={styles.itemsCard}>
+          <Text style={styles.cardTitle}>🧾 우리 집 육아용품</Text>
+          <Text style={styles.meta}>살 때 영수증을 기록해 두고, 필요 없어지면 바로 판매해요</Text>
+        </Pressable>
+      </Link>
+
       <View>
         {MENU.map((m) => (
           <Text key={m} style={styles.menu}>{m}</Text>
@@ -52,6 +60,7 @@ const styles = StyleSheet.create({
   avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: brand.cream, alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: 18, fontWeight: '700', color: brand.ink },
   meta: { fontSize: 13, color: brand.sub },
+  itemsCard: { borderWidth: 1, borderColor: brand.primary, borderRadius: 14, padding: 16, gap: 4 },
   card: { backgroundColor: brand.cream, borderRadius: 14, padding: 16, gap: 8 },
   cardTitle: { fontSize: 15, fontWeight: '700', color: brand.ink },
   bar: { height: 8, borderRadius: 4, backgroundColor: brand.line, overflow: 'hidden' },

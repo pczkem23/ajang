@@ -31,6 +31,11 @@ export default function ListingDetail() {
         <View style={styles.body}>
           <Text style={styles.meta}>{categoryLabel(item.categoryId)} · {item.region} · {timeAgo(item.createdAt)}</Text>
           <Text style={styles.title}>{item.title}</Text>
+          {item.hasReceipt && (
+            <View style={styles.receipt}>
+              <Text style={styles.receiptText}>🧾 구매 영수증 확인 · 판매자가 실제 구매 영수증을 보관하고 있어요</Text>
+            </View>
+          )}
 
           <View style={styles.specs}>
             <Spec k="상태" v={`${item.condition}급 · ${cond.label}`} color={cond.color} />
@@ -85,6 +90,8 @@ const styles = StyleSheet.create({
   specs: { gap: 8, padding: 14, backgroundColor: brand.cream, borderRadius: 12 },
   compare: { gap: 2 },
   compareMain: { fontSize: 15, fontWeight: '700', color: brand.primaryDark },
+  receipt: { backgroundColor: '#E8F6EF', borderRadius: 10, padding: 10 },
+  receiptText: { fontSize: 13, color: '#1F6E4A', fontWeight: '600' },
   safety: { backgroundColor: '#FFF4E5', borderRadius: 10, padding: 12 },
   safetyText: { fontSize: 13, color: '#8A5300', lineHeight: 19 },
   desc: { fontSize: 15, lineHeight: 23, color: brand.ink },

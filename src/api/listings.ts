@@ -1,15 +1,16 @@
 import { photoUrl, PHOTO_BUCKET, supabase } from '../lib/supabase';
+import { uploadImage } from '../lib/upload';
 import type { AgeBandId, CategoryId, ConditionGrade, Listing } from '../types';
 
 const SELECT = `id, title, brand, category_id, age_bands, condition, used_months, price, new_price, description,
-  seller_id, region, status, safety_sensitive, created_at,
+  seller_id, region, status, safety_sensitive, has_receipt, created_at,
   listing_photos(storage_path, sort_order), likes(count)`;
 
 type Row = {
   id: string; title: string; brand: string | null; category_id: string; age_bands: string[];
   condition: ConditionGrade; used_months: number | null; price: number; new_price: number | null;
   description: string; seller_id: string; region: string | null; status: Listing['status'];
-  safety_sensitive: boolean; created_at: string;
+  safety_sensitive: boolean; has_receipt: boolean; created_at: string;
   listing_photos: { storage_path: string; sort_order: number }[];
   likes: { count: number }[];
 };
@@ -32,6 +33,7 @@ const toListing = (r: Row): Listing => ({
   likes: r.likes?.[0]?.count ?? 0,
   createdAt: r.created_at,
   safetySensitive: r.safety_sensitive,
+  hasReceipt: r.has_receipt,
 });
 
 export interface ListingFilter {
@@ -63,6 +65,9 @@ export async function fetchListing(id: string): Promise<Listing | null> {
 
 export interface NewListing {
   title: string;
+  brand?: string;
+  ownedItemId?: string; // 우리 집 육아용품에서 전환한 경우
+  hasReceipt?: boolean;
   categoryId: CategoryId;
   ageBands: AgeBandId[];
   condition: ConditionGrade;
@@ -81,6 +86,9 @@ export async function createListing(sellerId: string, input: NewListing): Promis
     .insert({
       seller_id: sellerId,
       title: input.title,
+      brand: input.brand ?? null,
+      owned_item_id: input.ownedItemId ?? null,
+      has_receipt: input.hasReceipt ?? false,
       category_id: input.categoryId,
       age_bands: input.ageBands,
       condition: input.condition,
@@ -97,20 +105,18 @@ export async function createListing(sellerId: string, input: NewListing): Promis
   const listingId = data.id as string;
 
   const photos = await Promise.all(
-    input.photoUris.map(async (uri, i) => {
-      const res = await fetch(uri);
-      const buf = await res.arrayBuffer();
-      const type = res.headers.get('content-type') ?? 'image/jpeg';
-      const ext = type.split('/')[1]?.split(';')[0] ?? 'jpg';
-      const path = `${sellerId}/${listingId}/${i}.${ext}`;
-      const up = await supabase.storage.from(PHOTO_BUCKET).upload(path, buf, { contentType: type, upsert: true });
-      if (up.error) throw up.error;
-      return { listing_id: listingId, storage_path: path, sort_order: i };
-    }),
+    input.photoUris.map(async (uri, i) => ({
+      listing_id: listingId,
+      storage_path: await uploadImage(PHOTO_BUCKET, `${sellerId}/${listingId}/${i}`, uri),
+      sort_order: i,
+    })),
   );
   if (photos.length) {
     const { error: pe } = await supabase.from('listing_photos').insert(photos);
     if (pe) throw pe;
+  }
+  if (input.ownedItemId) {
+    await supabase.from('owned_items').update({ listing_id: listingId }).eq('id', input.ownedItemId);
   }
   return listingId;
 }

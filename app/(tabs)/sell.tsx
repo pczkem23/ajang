@@ -1,10 +1,13 @@
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { brand } from '@/constants/Colors';
 import { createListing } from '@/src/api/listings';
+import { fetchOwnedItem } from '@/src/api/ownedItems';
+import { monthsBetween } from '@/src/lib/upload';
+import type { OwnedItem } from '@/src/types';
 import { Chip } from '@/src/components/Chip';
 import { useAuth } from '@/src/lib/auth';
 import { AGE_BANDS, CATEGORIES, CONDITIONS } from '@/src/data/catalog';
@@ -20,6 +23,8 @@ export default function SellScreen() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { itemId } = useLocalSearchParams<{ itemId?: string }>();
+  const [fromItem, setFromItem] = useState<OwnedItem | null>(null);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<CategoryId | null>(null);
   const [ages, setAges] = useState<AgeBandId[]>([]);
@@ -28,6 +33,27 @@ export default function SellScreen() {
   const [price, setPrice] = useState('');
   const [newPrice, setNewPrice] = useState('');
   const [description, setDescription] = useState('');
+
+  // 우리 집 육아용품에서 넘어오면 구매 기록으로 판매글 자동 채우기
+  useEffect(() => {
+    if (!itemId) return;
+    fetchOwnedItem(itemId).then((it) => {
+      if (!it) return;
+      setFromItem(it);
+      setTitle(it.title);
+      setCategory(it.categoryId);
+      if (it.purchasePrice != null) setNewPrice(String(it.purchasePrice));
+      if (it.purchasedOn) setUsedMonths(String(monthsBetween(it.purchasedOn)));
+      if (it.photoUrl) setPhotos([it.photoUrl]);
+      const lines = [
+        it.store && `· 구매처: ${it.store}`,
+        it.purchasedOn && `· 구매일: ${it.purchasedOn}`,
+        it.receiptPath && '· 구매 영수증 보관 중',
+        it.memo && `· ${it.memo}`,
+      ].filter(Boolean);
+      setDescription(lines.join('\n'));
+    });
+  }, [itemId]);
 
   const toggleAge = (id: AgeBandId) => setAges((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const canSubmit = !!(title && category && ages.length && condition && price && photos.length);
@@ -44,7 +70,8 @@ export default function SellScreen() {
 
   const reset = () => {
     setPhotos([]); setTitle(''); setCategory(null); setAges([]); setCondition(null);
-    setUsedMonths(''); setPrice(''); setNewPrice(''); setDescription('');
+    setUsedMonths(''); setPrice(''); setNewPrice(''); setDescription(''); setFromItem(null);
+    router.setParams({ itemId: undefined });
   };
 
   // AI 자동 작성 전 단계: 입력값 기반 설명 템플릿
@@ -62,6 +89,9 @@ export default function SellScreen() {
     try {
       const id = await createListing(session.user.id, {
         title: title.trim(),
+        brand: fromItem?.brand,
+        ownedItemId: fromItem?.id,
+        hasReceipt: !!fromItem?.receiptPath,
         categoryId: category!,
         ageBands: ages,
         condition: condition!,
@@ -84,6 +114,13 @@ export default function SellScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, gap: 14 }}>
+      {fromItem && (
+        <View style={styles.fromItem}>
+          <Text style={styles.fromItemText}>
+            🧾 "{fromItem.title}" 구매 기록으로 채웠어요.{fromItem.receiptPath ? ' 영수증이 있어 "구매 영수증 확인" 배지가 붙어요.' : ''} 상태와 판매가만 정해 주세요.
+          </Text>
+        </View>
+      )}
       <Pressable style={styles.photoBox} onPress={pickPhotos} disabled={photos.length >= MAX_PHOTOS}>
         <Text style={styles.photoText}>📷 사진 추가 ({photos.length}/{MAX_PHOTOS})</Text>
         <Text style={styles.hint}>제품 라벨·사용감이 보이는 사진을 꼭 넣어주세요</Text>
@@ -187,6 +224,8 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: '600', color: brand.ink },
   input: { borderWidth: 1, borderColor: brand.line, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, color: brand.ink },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  fromItem: { backgroundColor: '#E8F6EF', borderRadius: 10, padding: 12 },
+  fromItemText: { fontSize: 13, color: '#1F6E4A', lineHeight: 19 },
   safety: { backgroundColor: '#FFF4E5', borderRadius: 10, padding: 12 },
   safetyText: { fontSize: 13, color: '#8A5300' },
   link: { color: brand.primaryDark, fontSize: 13, fontWeight: '600' },
