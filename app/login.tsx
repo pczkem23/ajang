@@ -19,6 +19,13 @@ export default function LoginScreen() {
   useEffect(() => {
     if (!url) return;
     const { queryParams } = Linking.parse(url);
+    // 소셜 로그인이 실패하면 ?error_description= (또는 #error_description=) 로 돌아온다
+    const hash = new URLSearchParams(url.split('#')[1] ?? '');
+    const errDesc = queryParams?.error_description ?? hash.get('error_description');
+    if (typeof errDesc === 'string' && errDesc) {
+      setMessage(`로그인하지 못했어요: ${errDesc}`);
+      return;
+    }
     const authCode = queryParams?.code;
     if (typeof authCode === 'string') {
       setBusy(true);

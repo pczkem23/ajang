@@ -1,5 +1,6 @@
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 
 import { supabase } from './supabase';
 
@@ -13,14 +14,20 @@ export type SocialProvider = 'kakao' | 'google' | 'apple';
  */
 export async function signInWithProvider(provider: SocialProvider): Promise<'ok' | 'cancel'> {
   const redirectTo = Linking.createURL('/login');
+  // 카카오: 이메일 동의 항목이 없어도 가입되도록 기본 프로필만 요청
+  const scopes = provider === 'kakao' ? { scopes: 'profile_nickname profile_image' } : {};
+
+  // 웹: 주소를 받아온 뒤 여는 팝업은 Safari 등이 막으므로 페이지 자체를 이동한다.
+  // 돌아오면 login 화면이 ?code= 를 세션으로 교환한다.
+  if (Platform.OS === 'web') {
+    const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo, ...scopes } });
+    if (error) throw error;
+    return 'ok';
+  }
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: {
-      redirectTo,
-      skipBrowserRedirect: true,
-      // 카카오: 이메일 동의 항목이 없어도 가입되도록 기본 프로필만 요청
-      ...(provider === 'kakao' ? { scopes: 'profile_nickname profile_image' } : {}),
-    },
+    options: { redirectTo, skipBrowserRedirect: true, ...scopes },
   });
   if (error) throw error;
 
