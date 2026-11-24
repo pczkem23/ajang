@@ -1,10 +1,10 @@
 import { useFonts } from 'expo-font';
 import { DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 
-import { Loading } from '@/src/components/ui';
+import { BrandLoading } from '@/src/components/BrandLoading';
 import { AuthProvider, isOnboarded, useAuth } from '@/src/lib/auth';
 
 
@@ -49,12 +49,18 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { session, profile, loading } = useAuth();
+  // 로딩 화면이 깜빡 지나가지 않도록 최소 1.2초는 보여줘요.
+  const [minShown, setMinShown] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMinShown(true), 1200);
+    return () => clearTimeout(t);
+  }, []);
   const segments = useSegments();
   const router = useRouter();
 
   // 로그인 → 온보딩 → 메인 순서로 이동
   useEffect(() => {
-    if (loading) return;
+    if (loading || !minShown) return;
     const top = segments[0];
     if (!session) {
       if (top !== 'login') router.replace('/login');
@@ -63,9 +69,9 @@ function RootLayoutNav() {
     } else if (top === 'login' || top === 'onboarding') {
       router.replace('/');
     }
-  }, [loading, session, profile, segments, router]);
+  }, [loading, minShown, session, profile, segments, router]);
 
-  if (loading) return <Loading />;
+  if (loading || !minShown) return <BrandLoading />;
 
   return (
     <ThemeProvider value={DefaultTheme}>
