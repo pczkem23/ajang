@@ -33,6 +33,12 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "내 동네를 자동으로 채우고 가까운 거래를 보여드리기 위해 현재 위치를 사용해요."
+        }
       ]
     ],
     "experiments": {
