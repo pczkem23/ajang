@@ -1,9 +1,10 @@
 import * as Linking from 'expo-linking';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { brand } from '@/constants/Colors';
 import { Button, Field, Input } from '@/src/components/ui';
+import { signInWithProvider, type SocialProvider } from '@/src/lib/oauth';
 import { supabase } from '@/src/lib/supabase';
 
 export default function LoginScreen() {
@@ -18,6 +19,13 @@ export default function LoginScreen() {
   useEffect(() => {
     if (!url) return;
     const { queryParams } = Linking.parse(url);
+    // 소셜 로그인이 실패하면 ?error_description= (또는 #error_description=) 로 돌아온다
+    const hash = new URLSearchParams(url.split('#')[1] ?? '');
+    const errDesc = queryParams?.error_description ?? hash.get('error_description');
+    if (typeof errDesc === 'string' && errDesc) {
+      setMessage(`로그인하지 못했어요: ${errDesc}`);
+      return;
+    }
     const authCode = queryParams?.code;
     if (typeof authCode === 'string') {
       setBusy(true);
@@ -27,6 +35,21 @@ export default function LoginScreen() {
       });
     }
   }, [url]);
+
+  const [showEmail, setShowEmail] = useState(false);
+
+  const social = async (p: SocialProvider) => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await signInWithProvider(p);
+      // 성공하면 AuthProvider가 세션을 감지해 다음 화면으로 이동
+    } catch (e) {
+      setMessage(`로그인하지 못했어요: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const sendCode = async () => {
     setBusy(true);
@@ -55,6 +78,22 @@ export default function LoginScreen() {
         <Text style={styles.logo}>아장</Text>
         <Text style={styles.slogan}>우리 아이가 졸업한 물건,{'\n'}누군가의 첫 시작이 되도록</Text>
       </View>
+      <View style={{ gap: 10 }}>
+        <Pressable style={[styles.social, { backgroundColor: '#FEE500' }]} onPress={() => social('kakao')} disabled={busy}>
+          <Text style={[styles.socialText, { color: '#191919' }]}>💬  카카오로 시작하기</Text>
+        </Pressable>
+        <Pressable style={[styles.social, { backgroundColor: '#000' }]} onPress={() => social('apple')} disabled={busy}>
+          <Text style={[styles.socialText, { color: '#fff' }]}>  Apple로 계속하기</Text>
+        </Pressable>
+        <Pressable style={[styles.social, styles.google]} onPress={() => social('google')} disabled={busy}>
+          <Text style={[styles.socialText, { color: '#1F1F1F' }]}>G  Google로 계속하기</Text>
+        </Pressable>
+        {!showEmail && (
+          <Text style={styles.link} onPress={() => setShowEmail(true)}>이메일로 로그인</Text>
+        )}
+        {!showEmail && message && <Text style={styles.message}>{message}</Text>}
+      </View>
+      {showEmail && (
       <View style={{ gap: 14 }}>
         <Field label="이메일">
           <Input value={email} onChangeText={setEmail} placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" editable={!sent} />
@@ -74,15 +113,19 @@ export default function LoginScreen() {
           <Button title="로그인 메일 받기" onPress={sendCode} disabled={!email.includes('@')} loading={busy} />
         )}
       </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: 'center', gap: 40, backgroundColor: brand.white },
+  container: { flex: 1, padding: 24, justifyContent: 'center', gap: 32, backgroundColor: brand.white },
   hero: { alignItems: 'center', gap: 10 },
   logo: { fontSize: 44, fontWeight: '800', color: brand.primary },
   slogan: { fontSize: 15, color: brand.sub, textAlign: 'center', lineHeight: 22 },
   message: { fontSize: 13, color: brand.primaryDark },
-  link: { textAlign: 'center', color: brand.sub, fontSize: 13 },
+  link: { textAlign: 'center', color: brand.sub, fontSize: 13, marginTop: 6 },
+  social: { borderRadius: 12, paddingVertical: 15, alignItems: 'center' },
+  socialText: { fontSize: 16, fontWeight: '700' },
+  google: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#DADCE0' },
 });

@@ -1,4 +1,4 @@
-import { Link, Stack, useFocusEffect } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -18,7 +18,6 @@ export default function OwnedItemsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: brand.white }}>
-      <Stack.Screen options={{ title: '우리 집 육아용품' }} />
       <FlatList
         data={data ?? []}
         keyExtractor={(i) => i.id}

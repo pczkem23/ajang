@@ -18,7 +18,11 @@ export default function TabLayout() {
       }}>
       <Tabs.Screen name="index" options={{ title: '홈', headerTitle: '아장 · 아기장터', tabBarIcon: icon('🏠') }} />
       <Tabs.Screen name="category" options={{ title: '카테고리', tabBarIcon: icon('🗂️') }} />
-      <Tabs.Screen name="sell" options={{ title: '판매하기', tabBarIcon: icon('➕') }} />
+      <Tabs.Screen
+        name="items"
+        options={{ title: '우리집', headerTitle: '우리 집 육아용품', tabBarIcon: icon('🧸'), tabBarLabelStyle: { fontWeight: '700' } }}
+      />
+      <Tabs.Screen name="sell" options={{ title: '판매', headerTitle: '판매하기', tabBarIcon: icon('➕') }} />
       <Tabs.Screen name="chat" options={{ title: '채팅', tabBarIcon: icon('💬') }} />
       <Tabs.Screen name="my" options={{ title: '마이', headerTitle: '마이페이지', tabBarIcon: icon('👤') }} />
     </Tabs>
